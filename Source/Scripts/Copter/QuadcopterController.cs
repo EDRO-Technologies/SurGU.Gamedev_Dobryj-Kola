@@ -50,6 +50,7 @@ public class QuadcopterController : MonoBehaviour
     float _yawDir;
     float _targetHeight;
     public Action requestPause;
+    public Transform lastCheckpoint;
 
     void Start()
     {
@@ -62,14 +63,14 @@ public class QuadcopterController : MonoBehaviour
         PID_throttle = new PIDController();
         _inputs.onReset += () => ResetDrone();
         _inputs.requestPause += () => requestPause?.Invoke();
+        lastCheckpoint = FindObjectOfType<PlayerSpawner>().GetSpawnPoint();
         ResetDrone();
     }
 
     private void ResetDrone()
     {
-        var spawner = FindObjectOfType<PlayerSpawner>().GetSpawnPoint();
-        transform.position = FindObjectOfType<PlayerSpawner>().GetSpawnPoint().position;
-        transform.rotation = spawner.rotation;
+        transform.position = lastCheckpoint.position;
+        transform.rotation = lastCheckpoint.rotation;
         _quadcopterRB.velocity = Vector3.zero;
         _quadcopterRB.angularVelocity = Vector3.zero;
         propellerBL.health = 100;
@@ -161,11 +162,9 @@ public class QuadcopterController : MonoBehaviour
         AddForceToPropeller(propellerBL.gameObject, propellerForceBL);
 
         float yawError = _quadcopterRB.angularVelocity.y;
-
-        float PID_yaw_output = PID_yaw.GetFactorFromPIDController(PID_yaw_gains, yawError) 
-            * ((propellerFL.health + propellerBL.health + propellerFR.health + propellerBR.health) / 4 ) / 100;
-
-        _quadcopterRB.AddTorque(transform.up * _yawDir * maxTorque * throttle);
+        float propHealthFactor = ((propellerFL.health + propellerBL.health + propellerFR.health + propellerBR.health) / 4) / 100;
+        float PID_yaw_output = PID_yaw.GetFactorFromPIDController(PID_yaw_gains, yawError) * propHealthFactor;
+        _quadcopterRB.AddTorque(transform.up * _yawDir * maxTorque * throttle * propHealthFactor);
 
         _quadcopterRB.AddTorque(transform.up * throttle * PID_yaw_output * -1f);
     }

@@ -16,7 +16,7 @@ public class IngameMenu : MonoBehaviour
     }
     public void OpenMainMenu()
     {
-        PauseController.Pause(true);
+        PauseController.Pause(false);
         MapLoader.LoadMainMenu();
     }
     public void OpenTutorial()
